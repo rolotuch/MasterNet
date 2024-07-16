@@ -37,6 +37,7 @@ public class GetCursoQuery
                             .Include(x => x.Instructores)
                             .Include(x => x.Precios)
                             .Include(x => x.Calificaciones)
+                            .Include(x => x.Photos)
                             .ProjectTo<CursoResponse>(_mapper.ConfigurationProvider)  //proyecte este resultado tipo a uno de curso reponse.
                             .FirstOrDefaultAsync(); //esto es para pasar solo un valor, el que nos envian del request
 

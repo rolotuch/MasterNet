@@ -38,7 +38,8 @@ namespace MasterNet.Aplicacion.Cursos.GetCursos
                 IQueryable<Curso> queryable = _context.Cursos!// con esto ya me devuelve una consulta; aca puedo mete un where _context.Cursos!.Where nombre ='xxx'
                                             .Include(x => x.Instructores) // aca le indico que me devuelva los resultado de instructores
                                             .Include(x => x.Calificaciones)
-                                            .Include(x => x.Precios);
+                                            .Include(x => x.Precios)
+                                            .Include(x => x.Photos); 
                 //todo lo anterior es parte del objeto iquerable
                 //ahora veremos como implementar otros parametros
                 //inicimaos con el titulo

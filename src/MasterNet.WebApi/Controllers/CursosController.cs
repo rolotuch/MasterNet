@@ -5,6 +5,7 @@ using MasterNet.Aplicacion.Cursos.GetCursos;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using static MasterNet.Aplicacion.Cursos.CursoCreate.CursoCreateCommand;
+using static MasterNet.Aplicacion.Cursos.CursoDelete.CursoDeleteCommand;
 using static MasterNet.Aplicacion.Cursos.CursoReporteExcel.CursoReporteExcelQuery;
 using static MasterNet.Aplicacion.Cursos.CursoUpdate.CursoUpdateCommand;
 using static MasterNet.Aplicacion.Cursos.GetCurso.GetCursoQuery;
@@ -52,6 +53,15 @@ namespace MasterNet.WebApi.Controllers
         {
             var command = new CursoUpdateCommandRequest(request, id);
             var resultado = await _sender.Send(command, cancellationToken);
+            return resultado.IsSuccess ? Ok(resultado?.Value) : BadRequest();
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<ActionResult<Unit>> CursoDelete(Guid id, CancellationToken cancellationToken)
+        {
+            var command = new CursoDeleteCommandRequest(id);
+            var resultado = await _sender.Send(command, cancellationToken);
+
             return resultado.IsSuccess ? Ok(resultado?.Value) : BadRequest();
         }
 
