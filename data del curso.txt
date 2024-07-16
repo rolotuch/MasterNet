@@ -1,0 +1,231 @@
+para ver todos los sdkas que tengo instaladas
+dotnet --info
+
+en la parte de .NET SDKs installed: aparecen todas las versiones instaladas
+
+para elegir una de estas versiones tenemos primero que copiar toda la version del skd
+por ejemplo si queremos la version 9 copiamos esto 9.0.100-preview.2.24157.14
+
+luego creamos un archivo tipo json ejemplo global.json de esta forma dotnet new globaljson --sdk-version 9.0.100-preview.2.24157.14 --force
+con esta sentencia se crea el archivo json y se setea la estructura con la version del sdk que utilizaremos
+
+ahora creamos la solucion dentro de la carpeta masternet
+dotnet new sln --name MasterNet
+
+ahora creamos el proyecto
+donet new wepapi -o src/MasterNet.WebApi --MasterNet.WebApi
+
+ahora tengo que enlazar el proyecto a la solucion
+dotnet sln add src/MasterNet.webapi/MasterNet.webApi.csproj
+
+para verificar si esta enlazado el proyecto a la solucion haremos un build
+dotnet build
+
+para correr un proyecto
+
+dotnet run -- project src/MasterNet.webapi
+
+capa
+persistencia, reflejo de la base de datos si existe una tabla en la bd llamada curso
+en la capa persistensia debe haber una instancia de una clase con los mismos atributos que la tabla curs
+la capa persistencia depende de la capa dominio.
+Dominio: se definien las clases con los mismos atributos que la tabla en la bd
+
+Aplication, se definen las reglas del negocio y otros recursos tecnicos se crean aca.
+
+Infraestructura
+
+y web api
+
+Creacion del proyecto Dominio
+dotnet new classlib -o src/MasterNet.Dominio
+enlazar el proyecto a la solucion
+dotnet sln add src/MasterNet.Dominio/MasterNet.Dominio.csproj
+
+Creacion del proyecto Persistencia
+dotnet new classlib -o src/MasterNet.Persistencia
+enlazar el proyecto a la solucion
+dotnet sln add src/MasterNet.Persistencia/MasterNet.Persistencia.csproj
+
+persistencia depende de dominio entonces hay que hacer esa referencia
+dotnet add src/MasterNet.Persistencia/MasterNet.Persistencia.csproj reference src/MasterNet.Dominio/MasterNet.Dominio.csproj
+
+en la capa de persistencia se crea una instancia en memoria de los modelos, a lo que llamamos context.
+context es una sesion de entity framework que representa la base de datos
+con el context podemos realizar las operaciones crud comunes
+
+el context es una instancia de dbcontext que priviene de entity framework para realizar las operaciones de consulta e insersion
+
+instalar paquetes en el proyecto persistencia
+primero debemos de estar dentro de la ruta del proyecto
+dotnet add package microsoft.entityFrmaworkCore
+dotnet add package microsoft.entityFrmaworkCore.Design
+dotnet add package microsoft.entityFrmaworkCore.tools
+
+vamos a utilizar sqllite para la base de datos
+dotnet add package microsoft.entityFrmaworkCore.sqlite --version
+paquete para crear data de prueba
+dotnet add package Bogus
+
+
+REALIZAR LA MIRGRACION
+antes de realizar la migracion debemos de verificar si la version que estamos usando se la misma 
+dotnet tool unistall dotnet-ef --global //elimina la version que se instala por default
+dotnet --info // verificamos el sdk para confirmar que es la correcta
+dotnet tool install --global dotnet-ef --version 9.0.0-preview.2.24128.4 // installamos tools con la version correcta, esta es la que elegimos desde el principio.
+dotnet tool install --global dotnet-ef //solo para la version 8
+ahora creamos los archivos de migracion, debemos crear la migracion dentro del proyecto de persistencia, en el pm debemos asegurarnos de estar dentro de la carpeta del proyecto
+dotnet ef migrations add MigracionInicial
+creamos la base de datos
+dotnet ef database update // con esto ya creamos la base de datos con el nombre que le indicamos
+
+
+UTILIZANDO LINQ PARA CONSULTAR DATOS (language integrate query)
+
+UTILIZNADO IDENTITY CORE  para la seguridad.
+dentro de persistencia instalamos 
+dotnet add package Microsoft.AspNetCore.Identity.EntityFrameworkCore --version 9.0.0-preview.2.24128.4 //para vscode dotnet
+ASP.NET Core Identity provider that uses Entity Framework Core // para visual studio administracion de paquete nuget apg
+luego de ello agregamos el identity core a la session del context
+cambiamos esta linea
+public class MasterNetDbContext : IdentityDbContext<AppUser>
+y agregamos una carpeta en persistencia llamada modelos y agregamos el appUser
+quitamos del proyecto persistencia la linea que acabamos de agregar
+< OutputType > Exe </ OutputType >
+tambien comentamos todo lo que creamos en el archivo MainEntry para no crear conflictos
+
+Agregamos datos a los roles Admin, y Cliente.
+se crearon tablas en dominio y en pesistencia,
+se trabajo en masternetdbcontext
+
+agregamos datos alos claims permisos de lectura y escritura
+se trabajo en masternetdbcontext
+
+CREACION DE TABLAS DE SEGURIDAD
+dotnet ef migrations add MigracionSeguridad
+dotnet ef database update
+
+SECCION 7 ARQUITECTURA CQRS
+capa de aplicacion => en esta capa va la logica de negocio de la aplicacion en dar mantenimineto a los cursos
+es punto de union de los requerimientos del cliete webapi a la bse de datos
+creamos una session del context del ef
+llamamos a cualquier entidad que tenemos en el modelo
+podemos usar crud desde esta capa, 
+la sincronizacion de mensajes entre el webapi y la capa de aplicacion usamos el patron mediator
+
+patron cqrs
+es el acronimo de command query responsability segregation
+para utilizar esto necesitamos instalar mediatR.
+
+creamos el proyecto aplicacion
+dotnet new classlib -o src/MasterNet.Aplicacion
+dotnet sln add src/MasterNet.Dominio/MasterNet.Aplicacion.csproj
+dotnet add src/MasterNet.Aplicacion/MasterNet.Aplicacion.csproj reference src/MasterNet.Dominio/MasterNet.Dominio.csproj
+dotnet add src/MasterNet.Aplicacion/MasterNet.Aplicacion.csproj reference src/MasterNet.Persistencia/MasterNet.Persistencia.csproj
+
+instalamos librerias en apliacion
+dentro de la carpeta de aplicacion instalar lo siguiente
+dotnet add package MediatR --version 12.1.1 por ejemplo
+libreria para validaciones 
+dotnet add package FluentValidations.aspnetcore
+libreria para trabajar con archivo o componentes dto (resultado de base de datos los puedo manipular antes de entregarlos al cliente
+dotnet add package AutoMapper --version 13.0.1
+
+SECCION 8 CONTENEDOR DE DEPENDENCIA EN WEB API
+es un componenete donde se configura la forma en que se crean los objetos
+el contenedor de dependencias esta a cargo de la instancia de los objetos
+el program.cs representa el contenedor de dependencia
+
+cambiamos las ruta de la creacion de la base de datos
+primero borramos la bd y las carpeta de migraciones luego con este comando  creamos nuevemente la migracion
+dotnet ef --verbose migrations add MigracionInicial -p src/MasterNet.Persistencia -s src/MasterNet.WebApi
+dotnet ef database update
+
+para el git git remote add origin https://github.com/rolotuch/MasterNet.git
+git branch -M main
+git push -u origin main
+
+
+seccion 9  REPORTES EN EXCEL
+Para crear un servicio generio realizo la declaracion del componente de la operacion en el proyecto de aplicacion
+pero la implementacion de la logica para convertir un .csv lo realizamos en infraestructrua, entonces debemos crear el proyecto de infraestructura.
+Creacion del proyecto Infraestructura
+dotnet new classlib -o src/MasterNet.Infraestructura
+dotnet sln add src/MasterNet.Dominio/MasterNet.infraesctructura.csproj
+dotnet add src/MasterNet.aplicacion/MasterNet.aplicacion.csproj reference src/MasterNet.Infraestructura/MasterNet.infraestructura.csproj
+dotnet add src/MasterNet.WebApi/MasterNet.WebApi.csproj reference src/MasterNet.Infraestructura/MasterNet.infraestructura.csproj
+
+Instalando librerias en Infraestructura
+dotnet add package csvHelper --version 31.0.3
+
+existen tres formas de poder configurar la inyeccion de dependencias de los servicios de la aplicacion de manera personalizada
+Transient 
+Cuando llega el request la configuracion transiendt crea un nuevo objeto por cada clases en la que se halla definico
+se utiliza mas en mensajeria, kafca, rabbit etc.
+Scoped
+cuando llega el request se crea la instancia del objeto x para la clase a, pero este objeto creado se crea para cada uno de las instancias de las demas clases
+esto para cada ciclo del request
+la mayoria de servicio se creara de tipo scoped
+Singleton
+los dos anteriores crean el objeto cuando se ejecuta la llamada del request
+el singleton crea el objeto cuando inicial el programa y dura mientras el programa este ejecutandose.  y estara disponible para todos los objetos
+que lo esten solicitando.
+
+para registar el servicio lo haremos en program
+
+para la generacion del archivo excel es recomendable utilizar un Scoped.
+
+seccion 10  Middleware Exception y Custom Response.
+todas las excepciones se trabajan desde una libreria llamada exception
+para personalizarlo, debemos crear un middleware para capturar todas esas exepciones.
+
+luego de crear el midleware ebemos de registrarlo en el contenedor de dependecias el program
+
+RESPONSE PERSONALIZADOS
+
+SECCION 11 AMBIENTES DE DESARROLLO
+EXISTEN TRES TIPOS DE AMBIEN
+DEVELOPMENT 
+Ambiente dond e programas el codigo
+STAGING
+Ambiente app ejecutandose en un servidor remoto para realizar test
+PRODUCTION
+app con los datos del proyecto final
+
+para ejecutar entre ambientes
+dotnet run  --project src/masternet.webapi --environment "Staging"   http://localhost:5233/DEMO/AMBIENTE
+dotnet run  --project src/masternet.webapi --environment "Production"
+
+SECCION 12 VALIDACIONES CON ASP NET CORE
+dependency inyection utilizamos el archivo DependencyInyection del proyecto Aplicacion
+
+SECCION 13 DTO Y AUTOMAPPER
+
+SECCION 14 PAGINACION AVANCZADA EN ASPNET CORE
+la paginacion es una consulta a la bd, la cual tiene cuatro partes ejemplo, 
+select nombre, apellido
+where nombre = 'Juan'
+order by apellido
+limit 10
+para no escribir esta consulta en directamente en c#, entonces podemos crear expression fuction, este es un tipo de delegate
+el delegate es una funcion que puede ser encapsulados dentro de expresiones.
+
+Paginacion con expressiones y delegates
+crearemos un arbol de expresiones que representaran la consulta sql en sintaxis c#
+antes de empezar instalamos una extencion 
+
+<<<<<<< HEAD
+SECCION 16 UPLOAD DE IMAGENES WN WEBAPI
+INSTALAR PAQUETES EN Infraestructura para cloudinary
+dotnet add package CludinaryDotnet --versino "1.25.1"
+
+recordemos que en dominio photo agregamos un a columna PublicId, debemos realizar las migraciones
+dotnet ef migrations add ImagenMigrations -p src/MasterNet.Persistencia/ -s src/MasterNet.WebApi/
+// con la sentencia anterio al momento de ejecutar el programa se crea la bd
+//ya no es necesario usar esto dotnet ef database update
+
+SECCION 17 CRUD WEB API
+En la creación del curso, nos ha faltado asignarle un instructor y un precio al curso, vamos a trabajar en ello
+=======
+
+>>>>>>> 241e551b77c74fa6acea5a4e303ce907e8db7453
